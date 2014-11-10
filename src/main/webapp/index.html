@@ -51,6 +51,10 @@
     var clock = new THREE.Clock();
     // custom global variables
     var cube;
+    var mouseX = 0;                                               // Mouse X pos relative to window centre
+    var mouseY = 0;
+    var windowCentreX = window.innerWidth / 2;                    // Window centre (X pos)
+    var windowCentreY = window.innerHeight / 2;
     init();
     animate();
     // FUNCTIONS
@@ -135,12 +139,23 @@
         MovingCube = new THREE.Mesh( MovingCubeGeom, MovingCubeMat );
         MovingCube.position.set(0, 25.1, 0);
         scene.add( MovingCube );
+
+
+        document.addEventListener( 'mousemove', function( event ) {
+
+            // Update mouseX and mouseY based on the new mouse X and Y positions
+            mouseX = ( event.clientX - windowCentreX );
+            mouseY = ( event.clientY - windowCentreY );
+        }, false );
     }
 
     var MovingCube;
 
     function animate()
     {
+        // Rotate the book based on the current mouse position
+        //MovingCubeGeom.rotation.y = mouseX * 0.005;
+        MovingCube.rotation.z = mouseY * 0.005;
         requestAnimationFrame( animate );
         render();
         update();
@@ -171,6 +186,9 @@
             MovingCube.rotateOnAxis( new THREE.Vector3(1,0,0), rotateAngle);
         if ( keyboard.pressed("F") )
             MovingCube.rotateOnAxis( new THREE.Vector3(1,0,0), -rotateAngle);
+
+        if (keyboard.pressed("G"))
+            MovingCube.rotate(30);
 
         if ( keyboard.pressed("Z") )
         {
