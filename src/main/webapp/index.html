@@ -10,11 +10,7 @@
 
 </head>
 <body>
-<div id="container">
 
-
-</div>
-<div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
 
 
 </body>
@@ -30,7 +26,23 @@
 <!-- jQuery code to display an information button and box when clicked. -->
 <script src="js/jquery-1.9.1.js"></script>
 <script src="js/jquery-ui.js"></script>
-<link rel=stylesheet href="https://raw.githubusercontent.com/stemkoski/stemkoski.github.com/master/Three.js/css/jquery-ui.css" />
+<link rel=stylesheet href="css/jquery-ui.css" />
+<link rel=stylesheet href="css/info.css"/>
+<script src="js/info.js"></script>
+<div id="infoButton"></div>
+<div id="infoBox" title="Demo Information">
+    Movement controls: <br/>
+    <ul>
+        <li>W/S: Translate Forward/Backward
+        <li>A/D: Rotate Left/Right
+        <li>Q/E: Translate Left/Right
+        <li>R/F: Rotate Up/Down
+        <li>Z: Reset position and rotation.
+    </ul>
+    This three.js demo is part of a collection at
+    <a href="http://stemkoski.github.io/Three.js/">http://stemkoski.github.io/Three.js/</a>
+</div>
+    <div id="ThreeJS" style="position: absolute; left:0px; top:0px"></div>
 <!--<script src="http://threejs.org/build/three.min.js"></script>-->
 
 <script>
@@ -77,7 +89,7 @@
         light.position.set(0,250,0);
         scene.add(light);
 // FLOOR
-        var floorTexture = new THREE.ImageUtils.loadTexture( 'images/checkerboard.jpg' );
+        var floorTexture = new THREE.ImageUtils.loadTexture( 'images/snow-512.jpg' );
         floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
         floorTexture.repeat.set( 10, 10 );
         var floorMaterial = new THREE.MeshBasicMaterial( { map: floorTexture, side: THREE.DoubleSide } );
@@ -110,7 +122,23 @@
         var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
         scene.add( skyBox );
 
+        // create an array with six textures for a cool cube
+        var materialArray = [];
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/xpos.png' ) }));
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/xneg.png' ) }));
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/ypos.png' ) }));
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/yneg.png' ) }));
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/zpos.png' ) }));
+        materialArray.push(new THREE.MeshBasicMaterial( { map: THREE.ImageUtils.loadTexture( 'images/zneg.png' ) }));
+        var MovingCubeMat = new THREE.MeshFaceMaterial(materialArray);
+        var MovingCubeGeom = new THREE.CubeGeometry( 50, 50, 50, 1, 1, 1, materialArray );
+        MovingCube = new THREE.Mesh( MovingCubeGeom, MovingCubeMat );
+        MovingCube.position.set(0, 25.1, 0);
+        scene.add( MovingCube );
     }
+
+    var MovingCube;
+
     function animate()
     {
         requestAnimationFrame( animate );
@@ -119,12 +147,47 @@
     }
     function update()
     {
-        if ( keyboard.pressed("z") )
+        var delta = clock.getDelta(); // seconds.
+        var moveDistance = 200 * delta; // 200 pixels per second
+        var rotateAngle = Math.PI / 2 * delta;   // pi/2 radians (90 degrees) per second
+
+        // local transformations
+        // move forwards/backwards/left/right
+        if ( keyboard.pressed("W") )
+            MovingCube.translateZ( -moveDistance );
+        if ( keyboard.pressed("S") )
+            MovingCube.translateZ(  moveDistance );
+        if ( keyboard.pressed("Q") )
+            MovingCube.translateX( -moveDistance );
+        if ( keyboard.pressed("E") )
+            MovingCube.translateX(  moveDistance );
+        // rotate left/right/up/down
+        var rotation_matrix = new THREE.Matrix4().identity();
+        if ( keyboard.pressed("A") )
+            MovingCube.rotateOnAxis( new THREE.Vector3(0,1,0), rotateAngle);
+        if ( keyboard.pressed("D") )
+            MovingCube.rotateOnAxis( new THREE.Vector3(0,1,0), -rotateAngle);
+        if ( keyboard.pressed("R") )
+            MovingCube.rotateOnAxis( new THREE.Vector3(1,0,0), rotateAngle);
+        if ( keyboard.pressed("F") )
+            MovingCube.rotateOnAxis( new THREE.Vector3(1,0,0), -rotateAngle);
+
+        if ( keyboard.pressed("Z") )
         {
-// do something
+            MovingCube.position.set(0,25.1,0);
+            MovingCube.rotation.set(0,0,0);
         }
 
-        controls.update();
+        var relativeCameraOffset = new THREE.Vector3(0,50,200);
+        var cameraOffset = relativeCameraOffset.applyMatrix4( MovingCube.matrixWorld );
+        camera.position.x = cameraOffset.x;
+        camera.position.y = cameraOffset.y;
+        camera.position.z = cameraOffset.z;
+        camera.lookAt( MovingCube.position );
+
+        //camera.updateMatrix();
+        //camera.updateProjectionMatrix();
+
         stats.update();
     }
     function render()
