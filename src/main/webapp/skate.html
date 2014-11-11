@@ -192,6 +192,8 @@
 
     var composer;
     var renderModel;
+    var deltaRotation = 0.1;
+    var deltaAngle = 0.1;
 
     // animation loop
     function animate() {
@@ -199,19 +201,24 @@
         // loop on request animation loop
         // - it has to be at the begining of the function
         // - see details at http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
-        requestAnimationFrame( animate );
+       requestAnimationFrame( animate );
 
         // do the render
-        render();
+
+       // render();
+        renderDelta();
+        //car.rotation.y += 0.1;
 
         // update stats
-        stats.update();
+      //  stats.update();
+
     }
 
     var angle = Math.PI/2;
     // render the scene
-    function render() {
+    function renderDelta() {
 
+        console.log("render");
         // update camera controls
         //cameraControls.update();
         /*
@@ -228,6 +235,23 @@
             car.position.z += 1.0;
         }
         */
+        /*
+        car.rotation.y += deltaRotation;
+        angle += deltaAngle;
+        car.position.z += Math.sin(-angle);
+        car.position.x += Math.cos(-angle);
+        */
+        if (car) {
+            console.log("car ok");
+            car.rotation.y += deltaRotation;
+            angle += deltaAngle;
+            car.position.z -= Math.sin(-angle);
+            car.position.x -= Math.cos(-angle);
+
+        } else {
+            console.log("car not init");
+        }
+
         if(keyboard.pressed("left")) {
             car.rotation.y += 0.1;
             angle += 0.1;
