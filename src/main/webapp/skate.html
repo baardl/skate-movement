@@ -51,21 +51,78 @@
     if( !init() )	animate();
 
     // init the scene
-    function init(){
-        if( Detector.webgl ){
+    function buildRenderer() {
+        if (Detector.webgl) {
             renderer = new THREE.WebGLRenderer({
-                antialias		: true,	// to get smoother output
-                preserveDrawingBuffer	: true	// to allow screenshot
+                antialias: true,	// to get smoother output
+                preserveDrawingBuffer: true	// to allow screenshot
             });
-            renderer.setClearColorHex( 0xFFFFFF, 1 );
+            renderer.setClearColorHex(0xFFFFFF, 1);
             // uncomment if webgl is required
             //}else{
             //	Detector.addGetWebGLMessage();
             //	return true;
-        }else{
-            renderer	= new THREE.CanvasRenderer();
+        } else {
+            renderer = new THREE.CanvasRenderer();
         }
-        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    function createCameraControl() {
+//cameraControls	= new THREEx.DragPanControls(camera)
+        keyboard = new THREEx.KeyboardState();
+
+        // transparently support window resize
+        THREEx.WindowResize.bind(renderer, camera);
+        // allow 'p' to make screenshot
+        THREEx.Screenshot.bindKey(renderer);
+        // allow 'f' to go fullscreen where this feature is supported
+        if (THREEx.FullScreen.available()) {
+            THREEx.FullScreen.bindKey();
+            document.getElementById('inlineDoc').innerHTML += "- <i>f</i> for fullscreen";
+        }
+    }
+    function addSky() {
+//load sky images
+        var urls = [
+            "images/sky1.png",
+            "images/sky1.png",
+            "images/sky1.png",
+            "images/sky1.png",
+            "images/sky1.png",
+            "images/sky1.png"
+        ];
+        var textureCube = THREE.ImageUtils.loadTextureCube(urls);
+
+        //setup the cube shader
+        var shader = THREE.ShaderUtils.lib["cube"];
+        var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
+        uniforms['tCube'].texture = textureCube;
+        var material = new THREE.ShaderMaterial({
+            fragmentShader: shader.fragmentShader,
+            vertexShader: shader.vertexShader,
+            uniforms: uniforms
+        });
+        return material;
+    }
+    function buildGround() {
+        var grassTex = THREE.ImageUtils.loadTexture('images/grass.png');
+        grassTex.wrapS = THREE.RepeatWrapping;
+        grassTex.wrapT = THREE.RepeatWrapping;
+        grassTex.repeat.x = 256;
+        grassTex.repeat.y = 256;
+        //var groundMat = new THREE.MeshBasicMaterial({color:0xFF66FF});
+        var groundMat = new THREE.MeshBasicMaterial({map: grassTex});
+
+        var groundGeo = new THREE.PlaneGeometry(400, 400);
+        var ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.position.y = -1.9; //lower it
+        ground.rotation.x = -Math.PI / 2; //-90 degrees around the xaxis
+        //IMPORTANT, draw on both sides
+        ground.doubleSided = true;
+        return ground;
+    }
+    function init(){
+        buildRenderer();
         document.getElementById('container').appendChild(renderer.domElement);
 
 
@@ -84,20 +141,7 @@
         scene.add(camera);
 
         // create a camera contol
-        //cameraControls	= new THREEx.DragPanControls(camera)
-        keyboard = new THREEx.KeyboardState();
-
-        // transparently support window resize
-        THREEx.WindowResize.bind(renderer, camera);
-        // allow 'p' to make screenshot
-        THREEx.Screenshot.bindKey(renderer);
-        // allow 'f' to go fullscreen where this feature is supported
-        if( THREEx.FullScreen.available() ){
-            THREEx.FullScreen.bindKey();
-            document.getElementById('inlineDoc').innerHTML	+= "- <i>f</i> for fullscreen";
-        }
-
-
+        createCameraControl();
 
         // here you add your objects
         // - you will most likely replace this part by your own
@@ -111,27 +155,7 @@
 
 
         //add skymap
-        //load sky images
-        var urls = [
-            "images/sky1.png",
-            "images/sky1.png",
-            "images/sky1.png",
-            "images/sky1.png",
-            "images/sky1.png",
-            "images/sky1.png"
-        ];
-        var textureCube = THREE.ImageUtils.loadTextureCube(urls);
-
-        //setup the cube shader
-        var shader = THREE.ShaderUtils.lib["cube"];
-        var uniforms = THREE.UniformsUtils.clone(shader.uniforms);
-        uniforms['tCube'].texture = textureCube;
-        var material = new THREE.ShaderMaterial({
-            fragmentShader : shader.fragmentShader,
-            vertexShader   : shader.vertexShader,
-            uniforms       : uniforms
-        });
-
+        var material = addSky();
         //create a skybox
         var size = 10000;
         skyboxMesh = new THREE.Mesh(
@@ -147,20 +171,7 @@
         scene.add(light);
 
         //add ground
-        var grassTex = THREE.ImageUtils.loadTexture('images/grass.png');
-        grassTex.wrapS = THREE.RepeatWrapping;
-        grassTex.wrapT = THREE.RepeatWrapping;
-        grassTex.repeat.x = 256;
-        grassTex.repeat.y = 256;
-        //var groundMat = new THREE.MeshBasicMaterial({color:0xFF66FF});
-        var groundMat = new THREE.MeshBasicMaterial({map:grassTex});
-
-        var groundGeo = new THREE.PlaneGeometry(400,400);
-        var ground = new THREE.Mesh(groundGeo,groundMat);
-        ground.position.y = -1.9; //lower it
-        ground.rotation.x = -Math.PI/2; //-90 degrees around the xaxis
-        //IMPORTANT, draw on both sides
-        ground.doubleSided = true;
+        var ground = buildGround();
         scene.add(ground);
 
 
@@ -217,22 +228,22 @@
             car.position.z += 1.0;
         }
         */
-         if(keyboard.pressed("left")) {
-         car.rotation.y += 0.1;
-         angle += 0.1;
-         }
-         if(keyboard.pressed("right")) {
-         car.rotation.y -= 0.1;
-         angle -= 0.1;
-         }
-         if(keyboard.pressed("up")) {
-         car.position.z -= Math.sin(-angle);
-         car.position.x -= Math.cos(-angle);
-         }
-         if(keyboard.pressed("down")) {
-         car.position.z += Math.sin(-angle);
-         car.position.x += Math.cos(-angle);
-         }
+        if(keyboard.pressed("left")) {
+            car.rotation.y += 0.1;
+            angle += 0.1;
+        }
+        if(keyboard.pressed("right")) {
+            car.rotation.y -= 0.1;
+            angle -= 0.1;
+        }
+        if(keyboard.pressed("up")) {
+            car.position.z -= Math.sin(-angle);
+            car.position.x -= Math.cos(-angle);
+        }
+        if(keyboard.pressed("down")) {
+            car.position.z += Math.sin(-angle);
+            car.position.x += Math.cos(-angle);
+        }
 
 
         // actually render the scene
