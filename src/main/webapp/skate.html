@@ -10,14 +10,15 @@
 		<script src="js/vendor/three.js/Detector.js"></script>
 		<!-- https://github.com/mrdoob/stats.js -->
 		<script src="js/vendor/three.js/Stats.js"></script>
-        <script src="js/vendor/ShaderExtras.js"></script>
+        <script src="js/vendor/three.js/ShaderExtras.js"></script>
+        <script src="js/OBJLoader.js"></script>
 
-        <script src="js/vendor/RenderPass.js"></script>
-        <script src="js/vendor/BloomPass.js"></script>
-        <script src="js/vendor/ShaderPass.js"></script>
-        <script src="js/vendor/EffectComposer.js"></script>
-        <script src="js/vendor/DotScreenPass.js"></script>
-        <script src="js/vendor/MaskPass.js"></script>
+        <script src="js/vendor/three.js/postprocessing/RenderPass.js"></script>
+        <script src="js/vendor/three.js/postprocessing/BloomPass.js"></script>
+        <script src="js/vendor/three.js/postprocessing/ShaderPass.js"></script>
+        <script src="js/vendor/three.js/postprocessing/EffectComposer.js"></script>
+        <script src="js/vendor/three.js/postprocessing/DotScreenPass.js"></script>
+        <script src="js/vendor/three.js/postprocessing/MaskPass.js"></script>
 
 		<script src="js/vendor/threex/THREEx.screenshot.js"></script>
 		<script src="js/vendor/threex/THREEx.FullScreen.js"></script>
@@ -178,6 +179,7 @@
 
         //load a car
         //IMPORTANT: be sure to use ./ or it may not load the .bin correctly
+        /*
         new THREE.BinaryLoader().load('./obj/VeyronNoUv_bin.js', function(geometry) {
             var material	= new THREE.MeshNormalMaterial();
             var orange    = new THREE.MeshLambertMaterial( { color: 0x995500, opacity: 1.0, transparent: false } );
@@ -186,6 +188,24 @@
             scene.add( mesh );
             car = mesh;
         });
+        */
+
+        var manager = new THREE.LoadingManager();
+        manager.onProgress = function ( item, loaded, total ) {
+            console.log( item, loaded, total );
+        };
+
+        var loader = new THREE.OBJLoader( manager );
+        loader.load( 'obj/hel-rough-ski.obj', function ( object ) {
+            object.traverse( function ( child ) {
+                if ( child instanceof THREE.Mesh ) {
+                    child.material.map = texture;
+                    car = child;
+                }
+            } );
+            object.position.y = - 80;
+            scene.add( object );
+        }, onProgress, onError );
 
     }
 
